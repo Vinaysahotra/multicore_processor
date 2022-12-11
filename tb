@@ -1,0 +1,44 @@
+module cpu_tb;
+  reg CLK,RESET;
+  wire [31:0] PC;
+  reg [31:0]INSTRUCTION;
+  wire  [7:0] RESULT;
+  reg[7:0]instr_mem[1023:0];
+  always@(PC)
+    begin
+      #2
+      INSTRUCTION={instr_mem[PC+3],instr_mem[PC+2],instr_mem[PC+1],instr_mem[PC]};
+    end
+  initial
+  begin {instr_mem[10'd3],instr_mem[10'd2],instr_mem[10'd1],instr_mem[10'd0]}=32'b00000000000000000000000000000011;
+    
+    {instr_mem[10'd7],instr_mem[10'd6],instr_mem[10'd5],instr_mem[10'd4]}=32'b00000000000000000000000000000101;
+    {instr_mem[10'd11],instr_mem[10'd10],instr_mem[10'd9],instr_mem[10'd8]}=32'b00000010000000100000000100000000;
+    {instr_mem[10'd15],instr_mem[10'd14],instr_mem[10'd13],instr_mem[10'd12]}=32'b00000101000001110000001100000010;
+    {instr_mem[10'd19],instr_mem[10'd18],instr_mem[10'd17],instr_mem[10'd16]}=32'b00000001000000100000000010000000;
+    {instr_mem[10'd23],instr_mem[10'd22],instr_mem[10'd21],instr_mem[10'd20]}=32'b00000100000001010000000100000100;
+    
+  end
+ cpuX uut(PC,INSTRUCTION,CLK,RESET,RESULT);
+  initial
+    begin
+      $dumpfile("cpu.vcd");
+      $dumpvars(1,cpu_tb);
+      CLK=1'b1;
+         RESET=1'b0;
+      #2
+      RESET=1'b1;
+      #4
+          RESET=1'b0;
+      #500
+       $finish;
+    end
+  
+      
+      always
+        #5 CLK=~CLK;
+    
+    
+endmodule
+  
+  
