@@ -1,0 +1,153 @@
+`include "registers" 
+`include "alu" 
+
+module cpuX(pc,instruction,clk,reset,aluresult);
+  input [31:0] instruction;
+ output  zero;
+ input clk;
+ input reset;
+  output reg [31:0] pc;
+
+ wire [31:0] PCRESULT;
+reg writeEnable;
+    reg isAdd;
+    reg isImediate;
+    reg [2:0] aluOp;
+    reg [2:0] regRead1Addres;
+    reg [2:0] regRead2Addres;
+    reg [2:0] writeRegAddres;
+    reg [7:0] immediateVal;
+    wire [7:0] mux1out;
+    wire [7:0] mux2out;
+  output [7:0] aluresult;
+    wire [7:0] minusVal;
+reg [7:0] IN;
+    wire [7:0] OUT1;
+    wire [7:0] OUT2;
+reg [7:0] OPCODE; 
+    reg [2:0] DESTINATION;  
+    reg [2:0] SOURCE1; 
+    reg [2:0] SOURCE2;
+  always@(reset)
+    begin
+      if(reset ==1)  pc =-4;
+    
+    end
+  
+  adder myadder(pc,PCRESULT);
+  always@(posedge clk)
+    begin
+       #1
+      pc = PCRESULT;
+    end
+ 
+  always @(instruction)
+ begin
+     // taking the opcode from the instruction
+     OPCODE = instruction[31:24];
+     #1
+     //decodeing the opcode
+  case(OPCODE)
+   8'b00000000:
+       begin
+    writeEnable = 1'b1;
+    aluOp = 3'b000;
+    isAdd = 1'b1;
+    isImediate = 1'b1;
+    end
+   8'b00000001:
+       begin
+    writeEnable = 1'b1;  
+    aluOp = 3'b000;
+    isAdd = 1'b1;
+    isImediate = 1'b0;
+    end
+   8'b00000010:
+       begin
+    writeEnable = 1'b1;
+    aluOp = 3'b001;
+    isAdd = 1'b1;
+    isImediate = 1'b0;
+    end
+   8'b00000011:
+       begin
+    writeEnable = 1'b1;
+    aluOp = 3'b001;
+    isAdd = 1'b0;
+    isImediate = 1'b0;
+    end
+   8'b00000100:
+       begin
+    writeEnable = 1'b1;
+    aluOp = 3'b010;
+    isAdd = 1'b1;
+    isImediate = 1'b0; 
+    end
+   8'b00000101:
+       begin
+    writeEnable = 1'b1;
+    aluOp = 3'b011;
+    isAdd  =1'b1;
+    isImediate = 1'b0; 
+    end     
+    
+  endcase        
+ end
+ //including the register file
+  reg_file myReg(IN,OUT1,OUT2,DESTINATION,SOURCE1,SOURCE2,writeEnable,clk,reset);  always@(instruction)
+ begin
+     DESTINATION  = instruction[18:16];
+      SOURCE1   = instruction[10:8];
+     SOURCE2 = instruction[2:0];
+     immediateVal =instruction[7:0];
+ end
+
+ twosCompliment mytwo(OUT2,minusVal);
+
+  mux2_1 mymux1(OUT2,minusVal,isAdd,mux1out);
+
+  mux2_1 mymux2(immediateVal,mux1out,isImediate,mux2out);
+ 
+
+  alu myalu(OUT1,mux2out,aluresult,aluOp,zero);
+  always@(aluresult)
+ begin
+    IN =aluresult;  //setting the reg input with the alu result
+ end
+endmodule
+
+module mux2_1(in0,in1,se1,out);
+ input se1;      //immediae value
+ input [7:0] in0; 
+ input [7:0] in1;           // register output
+  output reg  [7:0] out;
+ 
+always @(in0,in1,se1)
+ begin
+   case(se1)
+     1'b1:out=in0;
+     1'b0:out=in1;
+       default:out=in0;
+       endcase
+ end    
+endmodule
+
+module twosCompliment(in,result);
+   input [7:0] in;
+   output [7:0] result;
+   reg result;
+   always@(*) 
+   begin
+       result = ~in+1;
+   end
+endmodule
+
+module adder(PCOLD,PCNEW);
+  input [31:0] PCOLD;
+  output [31:0] PCNEW;
+ reg PCNEW;
+  always@(PCOLD)
+ begin
+  PCNEW = PCOLD+ 4;
+ end
+endmodule
